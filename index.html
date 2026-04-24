@@ -11,29 +11,30 @@
 
   <div id="ui">
     <div id="header">
-      <h1>☀️ Solar System</h1>
+      <h1>Solar System</h1>
       <p id="subtitle">Real-time orbital positions</p>
+      <div id="selection-display">Viewing: Sun</div>
     </div>
 
     <div id="controls-panel">
       <div class="control-group">
-        <label for="date-input">📅 Date</label>
+        <label for="date-input">Date</label>
         <input type="date" id="date-input" />
         <button id="today-btn">Today</button>
       </div>
 
       <div class="control-group">
-        <label>⏱ Time Speed</label>
+        <label>Time Speed</label>
         <div id="speed-controls">
-          <button class="speed-btn" data-speed="0">⏸</button>
-          <button class="speed-btn active" data-speed="1">1×</button>
-          <button class="speed-btn" data-speed="30">30×</button>
+          <button class="speed-btn" data-speed="0">Pause</button>
+          <button class="speed-btn active" data-speed="1">1x</button>
+          <button class="speed-btn" data-speed="30">30x</button>
           <button class="speed-btn" data-speed="365">1yr/s</button>
         </div>
       </div>
 
       <div class="control-group">
-        <label>🪐 Focus</label>
+        <label>Focus</label>
         <select id="focus-select">
           <option value="sun">Sun (overview)</option>
           <option value="mercury">Mercury</option>
@@ -48,7 +49,11 @@
       </div>
 
       <div class="control-group">
-        <label>👁 View</label>
+        <button id="reset-view-btn">Reset Camera</button>
+      </div>
+
+      <div class="control-group">
+        <label>View</label>
         <div class="toggles">
           <label class="toggle"><input type="checkbox" id="toggle-orbits" checked /><span>Orbit rings</span></label>
           <label class="toggle"><input type="checkbox" id="toggle-labels" checked /><span>Labels</span></label>
@@ -57,21 +62,23 @@
       </div>
     </div>
 
-    <!-- Planet Info Panel -->
     <div id="info-panel" class="hidden">
-      <button id="close-info">✕</button>
+      <button id="close-info">x</button>
       <h2 id="info-name"></h2>
       <div id="info-details"></div>
     </div>
 
-    <div id="date-display"></div>
+    <div id="status-bar">
+      <div id="date-display"></div>
+      <div id="sim-status">Playing</div>
+    </div>
 
-    <div class="hint">Scroll to zoom · Drag to rotate<br>Click a planet for details</div>
+    <div class="hint">Scroll to zoom | Drag to rotate<br>Click a planet for details</div>
   </div>
 
   <div id="loading">
     <div class="spinner"></div>
-    <p>Loading textures &amp; calculating orbits…</p>
+    <p>Loading textures and calculating orbits...</p>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
