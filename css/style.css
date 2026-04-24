@@ -1,0 +1,274 @@
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #020408;
+  --panel-bg: rgba(5, 12, 28, 0.85);
+  --border: rgba(100, 160, 255, 0.18);
+  --accent: #4a9eff;
+  --accent2: #ff9f4a;
+  --text: #d0e8ff;
+  --muted: #5a7a9f;
+  --font: 'Courier New', monospace;
+  --font-display: Georgia, serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+/* ── Canvas ── */
+#canvas-container {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+#canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── UI Overlay ── */
+#ui {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ── Header ── */
+#header {
+  position: absolute;
+  top: 24px; left: 28px;
+  pointer-events: none;
+}
+#header h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(74,158,255,0.6);
+}
+#header p {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ── Controls Panel ── */
+#controls-panel {
+  position: absolute;
+  top: 80px; left: 20px;
+  width: 220px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  pointer-events: all;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.control-group label {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* Date input */
+#date-input {
+  width: 100%;
+  background: rgba(10, 20, 45, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+  outline: none;
+  cursor: pointer;
+}
+#date-input:focus { border-color: var(--accent); }
+
+#today-btn {
+  width: 100%;
+  background: rgba(74, 158, 255, 0.12);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 6px;
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  padding: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#today-btn:hover { background: rgba(74, 158, 255, 0.25); }
+
+/* Speed buttons */
+#speed-controls {
+  display: flex;
+  gap: 4px;
+}
+.speed-btn {
+  flex: 1;
+  background: rgba(10, 20, 45, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.65rem;
+  padding: 4px 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.speed-btn:hover { border-color: var(--accent); color: var(--accent); }
+.speed-btn.active {
+  background: rgba(74, 158, 255, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Focus select */
+#focus-select {
+  width: 100%;
+  background: rgba(10, 20, 45, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  padding: 5px 8px;
+  outline: none;
+  cursor: pointer;
+}
+#focus-select:focus { border-color: var(--accent); }
+
+/* Toggles */
+.toggles { display: flex; flex-direction: column; gap: 6px; }
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+.toggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ── Info Panel ── */
+#info-panel {
+  position: absolute;
+  bottom: 30px; right: 20px;
+  width: 240px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  pointer-events: all;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+#info-panel.hidden { opacity: 0; pointer-events: none; transform: translateY(10px); }
+
+#close-info {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none;
+  color: var(--muted); font-size: 1rem;
+  cursor: pointer;
+}
+#close-info:hover { color: var(--text); }
+
+#info-name {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: #fff;
+  margin-bottom: 12px;
+  text-shadow: 0 0 12px rgba(74,158,255,0.4);
+}
+
+#info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  border-bottom: 1px solid rgba(100,160,255,0.08);
+  padding-bottom: 5px;
+}
+.info-row .label { color: var(--muted); }
+.info-row .value { color: var(--text); }
+
+/* ── Date Display ── */
+#date-display {
+  position: absolute;
+  bottom: 20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* ── Loading ── */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  gap: 16px;
+  transition: opacity 0.5s;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+
+.spinner {
+  width: 40px; height: 40px;
+  border: 2px solid rgba(74,158,255,0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#loading p {
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── Hint text ── */
+.hint {
+  position: absolute;
+  bottom: 20px; right: 20px;
+  font-size: 0.62rem;
+  color: rgba(90, 122, 159, 0.5);
+  text-align: right;
+  line-height: 1.6;
+  pointer-events: none;
+}
