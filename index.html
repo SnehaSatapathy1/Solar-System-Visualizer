@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solar System Visualizer</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div id="ui">
+    <div id="header">
+      <h1>☀️ Solar System</h1>
+      <p id="subtitle">Real-time orbital positions</p>
+    </div>
+
+    <div id="controls-panel">
+      <div class="control-group">
+        <label for="date-input">📅 Date</label>
+        <input type="date" id="date-input" />
+        <button id="today-btn">Today</button>
+      </div>
+
+      <div class="control-group">
+        <label>⏱ Time Speed</label>
+        <div id="speed-controls">
+          <button class="speed-btn" data-speed="0">⏸</button>
+          <button class="speed-btn active" data-speed="1">1×</button>
+          <button class="speed-btn" data-speed="30">30×</button>
+          <button class="speed-btn" data-speed="365">1yr/s</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>🪐 Focus</label>
+        <select id="focus-select">
+          <option value="sun">Sun (overview)</option>
+          <option value="mercury">Mercury</option>
+          <option value="venus">Venus</option>
+          <option value="earth">Earth</option>
+          <option value="mars">Mars</option>
+          <option value="jupiter">Jupiter</option>
+          <option value="saturn">Saturn</option>
+          <option value="uranus">Uranus</option>
+          <option value="neptune">Neptune</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>👁 View</label>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="toggle-orbits" checked /><span>Orbit rings</span></label>
+          <label class="toggle"><input type="checkbox" id="toggle-labels" checked /><span>Labels</span></label>
+          <label class="toggle"><input type="checkbox" id="toggle-trails" /><span>Motion trails</span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Planet Info Panel -->
+    <div id="info-panel" class="hidden">
+      <button id="close-info">✕</button>
+      <h2 id="info-name"></h2>
+      <div id="info-details"></div>
+    </div>
+
+    <div id="date-display"></div>
+
+    <div class="hint">Scroll to zoom · Drag to rotate<br>Click a planet for details</div>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading textures &amp; calculating orbits…</p>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script src="js/planets.js"></script>
+  <script src="js/astronomy.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
