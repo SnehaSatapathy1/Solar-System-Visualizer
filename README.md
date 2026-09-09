@@ -125,7 +125,7 @@ Instead of hiding those iterations, I documented them.
 
 ### Read the Full Development History
 
-**[→ Actual Build Workflow](DEVELOPMENT_HISTORY.md)**
+**[→ Actual Build Workflow](docs/Solar_System_Visualizer_Build_Workflow.docx)**
 
 The development history documents:
 
