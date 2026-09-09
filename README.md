@@ -10,7 +10,7 @@ What started as a small experiment with Codex gradually evolved into a date-driv
 
 ## Live Demo
 
-**[Explore the Solar System Visualizer →] (https://snehasatapathy1.github.io/Solar-System-Visualizer/)**
+**[→ Explore the Solar System Visualizer] (https://snehasatapathy1.github.io/Solar-System-Visualizer/)**
 
 ---
 
