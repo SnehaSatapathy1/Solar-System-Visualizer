@@ -12,7 +12,7 @@
   <div id="ui">
     <div id="header">
       <h1>Solar System</h1>
-      <p id="subtitle">Real-time orbital positions</p>
+      <p id="subtitle">Heliocentric overview by selected date</p>
       <div id="selection-display">Viewing: Sun</div>
     </div>
 
@@ -49,6 +49,22 @@
       </div>
 
       <div class="control-group">
+        <label>Size Scale</label>
+        <select id="size-scale-select">
+          <option value="conventional" selected>Conventional</option>
+          <option value="realistic">Realistic</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>Distance Scale</label>
+        <select id="distance-scale-select">
+          <option value="conventional" selected>Conventional</option>
+          <option value="realistic">Realistic</option>
+        </select>
+      </div>
+
+      <div class="control-group">
         <button id="reset-view-btn">Reset Camera</button>
       </div>
 
@@ -73,12 +89,12 @@
       <div id="sim-status">Playing</div>
     </div>
 
-    <div class="hint">Scroll to zoom | Drag to rotate<br>Click a planet for details</div>
+    <div class="hint">Scroll to zoom | Drag to orbit freely<br>Click planets or moons for details</div>
   </div>
 
   <div id="loading">
     <div class="spinner"></div>
-    <p>Loading textures and calculating orbits...</p>
+    <p>Loading textures and calculating positions...</p>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
