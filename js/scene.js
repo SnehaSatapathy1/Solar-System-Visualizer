@@ -1,10 +1,11 @@
-// js/scene.js  (Phase 5 - dynamic zoom focus, free roam, moon selection)
+// js/scene.js  (Phase 6 - dynamic zoom, free roam, moon labels, scale rebuild)
 
 let renderer, scene, camera, controls;
 let sunMesh, sunCorona;
 let planetMeshes = {};
 let orbitLines = {};
 let labelSprites = {};
+let moonLabelSprites = {};
 let trailLines = {};
 let trailPositions = {};
 let bodyRegistry = new Map();
@@ -15,6 +16,7 @@ const followState = {
   active: false,
   boostFrames: 0,
   offset: new THREE.Vector3(37.5, 26.25, 75),
+  smoothedTarget: new THREE.Vector3(0, 0, 0),
 };
 
 function initScene() {
@@ -23,14 +25,13 @@ function initScene() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = false;
   container.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x010208);
 
-  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.05, 5000);
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.05, 20000);
   camera.position.set(0, 35, 75);
   camera.lookAt(0, 0, 0);
 
@@ -39,9 +40,9 @@ function initScene() {
   controls.dampingFactor = 0.06;
   controls.enablePan = true;
   controls.minDistance = 1.2;
-  controls.maxDistance = 800;
+  controls.maxDistance = 15000;
 
-  controls.addEventListener("start", () => {
+  renderer.domElement.addEventListener("pointerdown", () => {
     if (followState.key !== "sun") {
       followState.active = false;
       followState.boostFrames = 0;
@@ -51,12 +52,7 @@ function initScene() {
   createStarfield();
   setupLighting();
   createSun();
-
-  for (const planet of PLANET_DATA) {
-    createPlanet(planet);
-    createOrbitLine(planet);
-    trailPositions[planet.key] = [];
-  }
+  rebuildSceneBodies(true);
 
   window.addEventListener("resize", onResize);
 }
@@ -89,19 +85,15 @@ function createStarfield() {
 }
 
 function setupLighting() {
-  scene.add(new THREE.AmbientLight(0x111133, 0.6));
+  scene.add(new THREE.AmbientLight(0x111133, 0.7));
 
   const sun = new THREE.PointLight(0xfff5e0, 3.0, 0, 1.1);
   sun.position.set(0, 0, 0);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 500;
   scene.add(sun);
 }
 
 function createSun() {
-  const geo = new THREE.SphereGeometry(SCALE.SUN_SIZE, 48, 48);
+  const geo = new THREE.SphereGeometry(getSunDisplayRadius(), 48, 48);
   const mat = new THREE.MeshStandardMaterial({
     color: 0xffcc33,
     emissive: 0xff8800,
@@ -111,6 +103,10 @@ function createSun() {
 
   const sunTex = makePlanetTexture("banded", ["#ffaa00", "#ffcc33", "#ff8800", "#ffdd44"], 256);
   mat.map = sunTex;
+
+  if (sunMesh) {
+    scene.remove(sunMesh);
+  }
 
   sunMesh = new THREE.Mesh(geo, mat);
   scene.add(sunMesh);
@@ -135,7 +131,7 @@ function createSun() {
   });
 
   sunCorona = new THREE.Sprite(spriteMat);
-  sunCorona.scale.set(11, 11, 1);
+  sunCorona.scale.set(getSunDisplayRadius() * 7.5, getSunDisplayRadius() * 7.5, 1);
   sunMesh.add(sunCorona);
 }
 
@@ -143,12 +139,78 @@ function makeMoonKey(parentKey, moonName) {
   return `${parentKey}:${moonName.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
+function clearBodies() {
+  for (const planetKey of Object.keys(planetMeshes)) {
+    const obj = planetMeshes[planetKey];
+    scene.remove(obj.pivot);
+
+    for (const moon of obj.moons) {
+      scene.remove(moon.pivot);
+    }
+  }
+
+  for (const key of Object.keys(orbitLines)) {
+    scene.remove(orbitLines[key]);
+  }
+
+  for (const key of Object.keys(trailLines)) {
+    scene.remove(trailLines[key]);
+    trailLines[key].geometry.dispose();
+  }
+
+  planetMeshes = {};
+  orbitLines = {};
+  labelSprites = {};
+  moonLabelSprites = {};
+  trailLines = {};
+  trailPositions = {};
+  bodyRegistry = new Map();
+}
+
+function rebuildSceneBodies(isInitial = false) {
+  const selectedBody = window.selectedBody || { kind: "star", key: "sun", name: "Sun" };
+
+  clearBodies();
+  createSun();
+
+  for (const planet of PLANET_DATA) {
+    createPlanet(planet);
+    createOrbitLine(planet);
+    trailPositions[planet.key] = [];
+  }
+
+  if (window.currentDate) {
+    window.currentPositions = getAllPlanetPositions(window.currentDate);
+    updatePlanetPositions(window.currentPositions, window.currentDate);
+  }
+
+  if (!isInitial) {
+    focusOn(selectedBody);
+    if (selectedBody.key !== "sun" && typeof showBodyInfo === "function") {
+      showBodyInfo(selectedBody, window.currentPositions || {});
+    }
+  }
+
+  updateCameraConstraints();
+}
+
+function setSizeScaleMode(mode) {
+  window.sizeScaleMode = mode;
+  rebuildSceneBodies();
+}
+
+function setDistanceScaleMode(mode) {
+  window.distanceScaleMode = mode;
+  rebuildSceneBodies();
+}
+
 function createPlanet(planet) {
   const tiltPivot = new THREE.Object3D();
   tiltPivot.rotation.z = (planet.axialTilt || 0) * SCENE_DEG;
   scene.add(tiltPivot);
 
-  const geo = new THREE.SphereGeometry(SCALE.PLANET_SIZE * planet.size, 36, 36);
+  const radius = getPlanetDisplayRadius(planet);
+  const geo = new THREE.SphereGeometry(radius, 36, 36);
   const mat = new THREE.MeshStandardMaterial({
     color: planet.color,
     roughness: 0.75,
@@ -162,10 +224,6 @@ function createPlanet(planet) {
     mat.color.set(0xffffff);
   }
 
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-
   const body = {
     kind: "planet",
     key: planet.key,
@@ -173,6 +231,7 @@ function createPlanet(planet) {
     data: planet,
   };
 
+  const mesh = new THREE.Mesh(geo, mat);
   mesh.userData = { body };
   tiltPivot.add(mesh);
 
@@ -184,15 +243,15 @@ function createPlanet(planet) {
     addRings(mesh, planet);
   }
 
-  const label = createLabel(planet.name);
-  label.position.y = SCALE.PLANET_SIZE * planet.size + 0.55;
+  const label = createLabel(planet.name, 2.5, 0.62);
+  label.position.y = radius + 0.55;
   mesh.add(label);
   labelSprites[planet.key] = label;
 
   const moonObjects = [];
   for (const moonData of (planet.moons || [])) {
     const moonObj = createMoon(moonData, planet);
-    tiltPivot.add(moonObj.pivot);
+    scene.add(moonObj.pivot);
     moonObjects.push(moonObj);
   }
 
@@ -201,7 +260,7 @@ function createPlanet(planet) {
 }
 
 function addAtmosphere(mesh, planet) {
-  const r = SCALE.PLANET_SIZE * planet.size;
+  const r = getPlanetDisplayRadius(planet);
   const atmGeo = new THREE.SphereGeometry(r * 1.12, 32, 32);
 
   const atmMat = new THREE.MeshStandardMaterial({
@@ -217,7 +276,7 @@ function addAtmosphere(mesh, planet) {
 }
 
 function addRings(mesh, planet) {
-  const r = SCALE.PLANET_SIZE * planet.size;
+  const r = getPlanetDisplayRadius(planet);
   const ringGeo = new THREE.RingGeometry(r * 1.35, r * 2.5, 80);
 
   const pos = ringGeo.attributes.position;
@@ -262,8 +321,9 @@ function addRings(mesh, planet) {
 
 function createMoon(moonData, parentPlanet) {
   const pivot = new THREE.Object3D();
+  const radius = getMoonDisplayRadius(moonData);
 
-  const geo = new THREE.SphereGeometry(SCALE.PLANET_SIZE * moonData.size, 20, 20);
+  const geo = new THREE.SphereGeometry(radius, 20, 20);
   const mat = new THREE.MeshStandardMaterial({
     color: moonData.color,
     roughness: 0.9,
@@ -285,21 +345,32 @@ function createMoon(moonData, parentPlanet) {
   };
 
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.castShadow = true;
-  mesh.position.x = moonData.orbitRadius;
   mesh.userData = { body };
   pivot.add(mesh);
 
+  const label = createLabel(moonData.name, 1.6, 0.4);
+  label.position.y = radius + 0.18;
+  label.visible = false;
+  mesh.add(label);
+  moonLabelSprites[body.key] = {
+    label,
+    mesh,
+    threshold: Math.max(10, getMoonOrbitDisplayRadius(moonData) * 1.8),
+  };
+
   const moonOrbitPoints = [];
-  for (let i = 0; i <= 64; i++) {
-    const a = (i / 64) * Math.PI * 2;
-    moonOrbitPoints.push(
-      new THREE.Vector3(
-        Math.cos(a) * moonData.orbitRadius,
-        0,
-        Math.sin(a) * moonData.orbitRadius
-      )
+  const orbitRadius = getMoonOrbitDisplayRadius(moonData);
+  const inclination = (moonData.inclination || 0) * SCENE_DEG;
+
+  for (let i = 0; i <= 96; i++) {
+    const a = (i / 96) * Math.PI * 2;
+    const point = new THREE.Vector3(
+      Math.cos(a) * orbitRadius,
+      0,
+      Math.sin(a) * orbitRadius
     );
+    point.applyAxisAngle(new THREE.Vector3(1, 0, 0), inclination);
+    moonOrbitPoints.push(point);
   }
 
   const moonOrbitLine = new THREE.Line(
@@ -307,18 +378,17 @@ function createMoon(moonData, parentPlanet) {
     new THREE.LineBasicMaterial({
       color: 0x334466,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.2,
     })
   );
 
   pivot.add(moonOrbitLine);
-
   bodyRegistry.set(body.key, { body, mesh, pivot });
 
   return { pivot, mesh, data: moonData, body };
 }
 
-function createLabel(text) {
+function createLabel(text, scaleX, scaleY) {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 64;
@@ -337,7 +407,7 @@ function createLabel(text) {
   });
 
   const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(2.5, 0.62, 1);
+  sprite.scale.set(scaleX, scaleY, 1);
   return sprite;
 }
 
@@ -363,7 +433,8 @@ function updatePlanetPositions(positions, currentDate) {
     const obj = planetMeshes[planet.key];
     if (!obj || !pos) continue;
 
-    obj.pivot.position.set(pos.sceneX, pos.sceneY, pos.sceneZ);
+    const parentWorld = new THREE.Vector3(pos.sceneX, pos.sceneY, pos.sceneZ);
+    obj.pivot.position.copy(parentWorld);
 
     const rotRate = planet.rotationPeriod !== 0
       ? (2 * Math.PI / planet.rotationPeriod) * (1 / 60)
@@ -374,18 +445,38 @@ function updatePlanetPositions(positions, currentDate) {
     }
 
     for (const moon of obj.moons) {
-      if (window.timeSpeed > 0) {
+      moon.pivot.position.copy(parentWorld);
+
+      if (moon.body.key === "earth:moon") {
+        const moonScenePos = getEarthMoonScenePosition(currentDate);
+        moon.mesh.position.set(
+          moonScenePos.sceneX - pos.sceneX,
+          moonScenePos.sceneY - pos.sceneY,
+          moonScenePos.sceneZ - pos.sceneZ
+        );
+      } else {
         const period = Math.abs(moon.data.period);
         const dir = moon.data.period < 0 ? -1 : 1;
         const angle = (daysSinceEpoch / period) * Math.PI * 2 * dir;
-        moon.pivot.rotation.y = angle;
+        const orbitRadius = getMoonOrbitDisplayRadius(moon.data);
+        const inclination = (moon.data.inclination || 0) * SCENE_DEG;
+
+        const local = new THREE.Vector3(
+          Math.cos(angle) * orbitRadius,
+          0,
+          Math.sin(angle) * orbitRadius
+        );
+        local.applyAxisAngle(new THREE.Vector3(1, 0, 0), inclination);
+        moon.mesh.position.copy(local);
       }
     }
 
     if (window.timeSpeed > 0) {
       const trail = trailPositions[planet.key];
       trail.push(new THREE.Vector3(pos.sceneX, pos.sceneY, pos.sceneZ));
-      if (trail.length > 300) trail.shift();
+      if (trail.length > 300) {
+        trail.shift();
+      }
 
       if (trailLines[planet.key]) {
         scene.remove(trailLines[planet.key]);
@@ -415,8 +506,14 @@ function setOrbitsVisible(visible) {
 }
 
 function setLabelsVisible(visible) {
+  window.labelsEnabled = visible;
+
   for (const key of Object.keys(labelSprites)) {
     labelSprites[key].visible = visible;
+  }
+
+  for (const key of Object.keys(moonLabelSprites)) {
+    moonLabelSprites[key].label.visible = false;
   }
 }
 
@@ -441,10 +538,8 @@ function resolveBody(target) {
   return bodyRegistry.get(target.key)?.body || target;
 }
 
-function getFocusTargetPosition(target) {
-  const body = resolveBody(target);
-
-  if (body.key === "sun") {
+function getBodyWorldPosition(body) {
+  if (!body || body.key === "sun") {
     return new THREE.Vector3(0, 0, 0);
   }
 
@@ -453,28 +548,23 @@ function getFocusTargetPosition(target) {
     return new THREE.Vector3(0, 0, 0);
   }
 
-  if (body.kind === "moon") {
-    const worldPos = new THREE.Vector3();
-    entry.mesh.getWorldPosition(worldPos);
-    return worldPos;
-  }
-
-  return entry.pivot.position.clone();
+  const worldPos = new THREE.Vector3();
+  entry.mesh.getWorldPosition(worldPos);
+  return worldPos;
 }
 
 function getFocusDistance(body) {
   if (!body || body.key === "sun") {
-    return 75;
+    return Math.max(75, getSunDisplayRadius() * 4.2);
   }
 
-  const size = body.data?.size || 1;
-  const sceneRadius = SCALE.PLANET_SIZE * size;
+  const radius = getBodyDisplayRadius(body);
 
   if (body.kind === "moon") {
-    return THREE.MathUtils.clamp(sceneRadius * 30, 2.5, 6);
+    return THREE.MathUtils.clamp(radius * 10, 2.2, 8);
   }
 
-  return THREE.MathUtils.clamp(sceneRadius * 20, 4, 14);
+  return THREE.MathUtils.clamp(radius * 7.5, 3.5, 20);
 }
 
 function getCurrentViewDirection() {
@@ -489,6 +579,7 @@ function getCurrentViewDirection() {
 
 function focusOn(target) {
   const body = resolveBody(target);
+  const targetPos = getBodyWorldPosition(body);
   const distance = getFocusDistance(body);
   const direction = getCurrentViewDirection();
 
@@ -496,25 +587,78 @@ function focusOn(target) {
   followState.offset.copy(direction.multiplyScalar(distance));
   followState.boostFrames = 60;
   followState.active = body.key !== "sun";
+  followState.smoothedTarget.copy(targetPos);
+
+  if (body.key === "sun") {
+    followState.active = false;
+    controls.target.set(0, 0, 0);
+    camera.position.copy(targetPos.clone().add(followState.offset));
+  }
+
+  updateCameraConstraints();
 }
 
 function updateCameraFollow() {
   if (!followState.active && followState.boostFrames <= 0) {
+    updateCameraConstraints();
     return;
   }
 
-  const targetPos = getFocusTargetPosition(followState.key);
-  const desiredCameraPos = targetPos.clone().add(followState.offset);
+  const targetPos = getBodyWorldPosition(resolveBody(followState.key));
+  const targetSmoothing = window.timeSpeed >= 30 ? 0.08 : 0.16;
+  const cameraLerp = followState.boostFrames > 0 ? 0.14 : (window.timeSpeed >= 30 ? 0.18 : 0.1);
+  const controlLerp = followState.boostFrames > 0 ? 0.18 : (window.timeSpeed >= 30 ? 0.16 : 0.1);
 
-  const cameraLerp = followState.boostFrames > 0 ? 0.12 : 0.08;
-  const targetLerp = followState.boostFrames > 0 ? 0.16 : 0.08;
+  followState.smoothedTarget.lerp(targetPos, targetSmoothing);
 
+  const desiredCameraPos = followState.smoothedTarget.clone().add(followState.offset);
   camera.position.lerp(desiredCameraPos, cameraLerp);
-  controls.target.lerp(targetPos, targetLerp);
+  controls.target.lerp(followState.smoothedTarget, controlLerp);
 
   if (followState.boostFrames > 0) {
     followState.boostFrames--;
   }
+
+  updateCameraConstraints();
+}
+
+function updateMoonLabelVisibility() {
+  const enabled = window.labelsEnabled !== false;
+
+  for (const key of Object.keys(moonLabelSprites)) {
+    const item = moonLabelSprites[key];
+    const worldPos = new THREE.Vector3();
+    item.mesh.getWorldPosition(worldPos);
+
+    const distance = camera.position.distanceTo(worldPos);
+    item.label.visible = enabled && distance < item.threshold;
+  }
+}
+
+function updateCameraConstraints() {
+  const candidates = [];
+  candidates.push({
+    center: new THREE.Vector3(0, 0, 0),
+    radius: getSunDisplayRadius(),
+  });
+
+  for (const entry of bodyRegistry.values()) {
+    candidates.push({
+      center: getBodyWorldPosition(entry.body),
+      radius: getBodyDisplayRadius(entry.body),
+    });
+  }
+
+  let minDistance = 1.2;
+  for (const candidate of candidates) {
+    const distanceToTarget = controls.target.distanceTo(candidate.center);
+    if (distanceToTarget < candidate.radius * 3.0) {
+      minDistance = Math.max(minDistance, candidate.radius * 1.12);
+    }
+  }
+
+  controls.minDistance = minDistance;
+  controls.maxDistance = getDistanceScaleMode() === "realistic" ? 15000 : 800;
 }
 
 function setupClickDetection(onBodyClick) {
@@ -543,10 +687,11 @@ function onResize() {
 
 function render(timestamp) {
   updateCameraFollow();
+  updateMoonLabelVisibility();
   controls.update();
 
   if (sunCorona) {
-    const s = 10 + Math.sin(timestamp * 0.001) * 1.2;
+    const s = getSunDisplayRadius() * (7.2 + Math.sin(timestamp * 0.001) * 0.35);
     sunCorona.scale.set(s, s, 1);
   }
 
