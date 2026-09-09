@@ -1,10 +1,14 @@
-// js/main.js  (Phase 5 - startup safety + unified body selection)
+// js/main.js  (Phase 6 - synced state, scale modes, startup safety)
 
 window.currentDate = new Date();
 window.timeSpeed = 1;
 window.currentPositions = {};
 window.showTrails = false;
+window.labelsEnabled = true;
+window.sizeScaleMode = "conventional";
+window.distanceScaleMode = "conventional";
 window.selectedPlanetKey = "sun";
+window.selectedBody = { kind: "star", key: "sun", name: "Sun" };
 
 let lastTimestamp = null;
 
