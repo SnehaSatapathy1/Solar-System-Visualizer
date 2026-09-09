@@ -52,7 +52,7 @@ html, body {
   position: absolute;
   top: 20px;
   left: 20px;
-  width: 220px;
+  width: 240px;
   pointer-events: none;
 }
 
@@ -68,7 +68,7 @@ html, body {
 #header p {
   font-size: 0.68rem;
   color: var(--muted);
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-top: 2px;
 }
@@ -86,7 +86,9 @@ html, body {
   position: absolute;
   top: 138px;
   left: 20px;
-  width: 220px;
+  width: 240px;
+  max-height: calc(100vh - 170px);
+  overflow-y: auto;
   background: var(--panel-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -108,22 +110,32 @@ html, body {
   margin-bottom: 6px;
 }
 
-/* Date input */
-#date-input {
+#date-input,
+#focus-select,
+#size-scale-select,
+#distance-scale-select,
+#moon-picker {
   width: 100%;
   background: rgba(10, 20, 45, 0.8);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
   font-family: var(--font);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   padding: 5px 8px;
-  margin-bottom: 6px;
   outline: none;
   cursor: pointer;
 }
 
-#date-input:focus {
+#date-input {
+  margin-bottom: 6px;
+}
+
+#date-input:focus,
+#focus-select:focus,
+#size-scale-select:focus,
+#distance-scale-select:focus,
+#moon-picker:focus {
   border-color: var(--accent);
 }
 
@@ -176,24 +188,6 @@ html, body {
   color: var(--accent);
 }
 
-/* Focus select */
-#focus-select {
-  width: 100%;
-  background: rgba(10, 20, 45, 0.8);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: 0.78rem;
-  padding: 5px 8px;
-  outline: none;
-  cursor: pointer;
-}
-
-#focus-select:focus {
-  border-color: var(--accent);
-}
-
 /* Toggles */
 .toggles {
   display: flex;
@@ -220,7 +214,7 @@ html, body {
   position: absolute;
   top: 20px;
   right: 20px;
-  width: 260px;
+  width: 280px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   background: var(--panel-bg);
@@ -287,6 +281,19 @@ html, body {
   flex: 1;
   text-align: right;
   word-break: break-word;
+}
+
+.info-block {
+  border-bottom: 1px solid rgba(100, 160, 255, 0.08);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.info-block .label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-bottom: 6px;
 }
 
 /* Bottom status */
@@ -382,7 +389,7 @@ html, body {
 /* Responsive */
 @media (max-width: 900px) {
   #info-panel {
-    width: 230px;
+    width: 250px;
   }
 }
 
@@ -393,7 +400,7 @@ html, body {
   }
 
   #header {
-    width: 210px;
+    width: 220px;
   }
 
   #header h1 {
@@ -407,7 +414,7 @@ html, body {
 
   #controls-panel {
     top: 126px;
-    width: 210px;
+    width: 220px;
     padding: 14px;
   }
 
@@ -415,7 +422,7 @@ html, body {
     top: auto;
     bottom: 70px;
     right: 14px;
-    width: min(240px, calc(100vw - 28px));
+    width: min(250px, calc(100vw - 28px));
     max-height: 42vh;
   }
 
@@ -456,7 +463,7 @@ html, body {
     top: 110px;
     left: 12px;
     width: calc(100vw - 24px);
-    max-width: 260px;
+    max-width: 280px;
     padding: 12px;
     gap: 12px;
   }
@@ -488,9 +495,12 @@ html, body {
   }
 
   #focus-select,
+  #size-scale-select,
+  #distance-scale-select,
   #date-input,
   #today-btn,
-  #reset-view-btn {
+  #reset-view-btn,
+  #moon-picker {
     font-size: 0.74rem;
   }
 }
